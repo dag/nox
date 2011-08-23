@@ -1,3 +1,5 @@
+import operator
+
 from nox import magic
 
 
@@ -7,14 +9,21 @@ outer = ...
 class MagicTuple (magic.NamedTuple):
 
     keeps_order
-
     _ignores_private
-
     and_not_sorted_lexically
-
     whoa_man
-
     outer
+
+
+class Weekday (magic.Enum):
+
+    MONDAY
+    TUESDAY
+    WEDNESDAY
+    THURSDAY
+    FRIDAY
+    SATURDAY
+    SUNDAY
 
 
 def test_named_tuple():
@@ -35,7 +44,6 @@ def test_placeholder():
     class Person (magic.NamedTuple):
 
         first_name
-
         last_name
 
     people = [Person('Guido', 'van Rossum'), Person('Larry', 'Wall')]
@@ -44,3 +52,48 @@ def test_placeholder():
 
     numbers = [3, 6, 9]
     assert list(map(X * 3, numbers)) == [9, 18, 27]
+
+
+def test_enum_identity():
+    mon = Weekday.MONDAY
+    assert mon is Weekday.MONDAY is not Weekday.SUNDAY
+
+
+def test_enum_ordering():
+    assert (Weekday.MONDAY <
+            Weekday.TUESDAY <
+            Weekday.WEDNESDAY <
+            Weekday.THURSDAY <
+            Weekday.FRIDAY <
+            Weekday.SATURDAY <
+            Weekday.SUNDAY)
+
+
+def test_enum_repr():
+    assert repr(Weekday.MONDAY) == 'Weekday.MONDAY'
+    assert repr(Weekday) == ('<Weekday (MONDAY, TUESDAY, '
+                                       'WEDNESDAY, THURSDAY, '
+                                       'FRIDAY, SATURDAY, SUNDAY)>')
+
+
+def test_enum_iter():
+    assert list(Weekday) == [Weekday.MONDAY,
+                             Weekday.TUESDAY,
+                             Weekday.WEDNESDAY,
+                             Weekday.THURSDAY,
+                             Weekday.FRIDAY,
+                             Weekday.SATURDAY,
+                             Weekday.SUNDAY]
+
+
+def test_enum_index():
+    assert list(map(operator.index, Weekday)) == list(range(7))
+
+
+def test_enum_arithmetics():
+    assert Weekday.MONDAY + 2 is Weekday.WEDNESDAY
+    assert Weekday.WEDNESDAY - 2 is Weekday.MONDAY
+
+
+def test_enum_containment():
+    assert Weekday.MONDAY in Weekday.MONDAY not in Weekday.SUNDAY

@@ -1,4 +1,5 @@
 import collections
+import functools
 import operator
 
 
@@ -57,3 +58,52 @@ class _Placeholder (metaclass=_PlaceholderMeta):
 
 
 X = _Placeholder()
+
+
+@functools.total_ordering
+class _EnumValue:
+
+    def __init__(self, enum, name, position):
+        self.enum, self.name, self.position = enum, name, position
+
+    def __repr__(self):
+        return '{self.enum.__name__}.{self.name}'.format(self=self)
+
+    def __lt__(self, other):
+        return self.position < other.position
+
+    def __index__(self):
+        return self.position
+
+    def __add__(self, other):
+        return list(self.enum)[self.position + operator.index(other)]
+
+    def __sub__(self, other):
+        return list(self.enum)[self.position - operator.index(other)]
+
+    def __contains__(self, other):
+        return self is other
+
+
+class _EnumMeta (type):
+
+    def __prepare__(name, bases):
+        return _FieldRecordingDict()
+
+    def __new__(cls, enum, bases, ns):
+        enum = type.__new__(cls, enum, (), {})
+        for position, name in enumerate(ns['_fields']):
+            setattr(enum, name, _EnumValue(enum, name, position))
+        return enum
+
+    def __iter__(cls):
+        values = (value for value in vars(cls).values()
+                        if isinstance(value, _EnumValue))
+        return iter(sorted(values, key=X.position))
+
+    def __repr__(cls):
+        return '<{} ({})>'.format(cls.__name__,
+                                  ', '.join(value.name for value in cls))
+
+
+Enum = type.__new__(_EnumMeta, 'Enum', (), {})
